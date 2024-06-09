@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo app</title>
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          max-width: 800px;
+          margin: auto;
+        }
+        .todo {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .completed {
+          text-decoration: line-through;
+        }
+      </style>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <h1>todo app</h1>
+            <div class="container-form">
+                <form id="todo-form">
+                    <input id="todo-input" type="text" placeholder="Enter new todo">
+                    <button type="submit">Add</button>
+                </form>
+            </div>
+            <div id="todo-list">
+
+            </div>
+        </div>
+    </div>
+    <script>
+        const { todo } = require("node:test");
+
+        const apiurl="http://localhost:3000/todos"
+        
+        const todoForm=document.getElementById("todo-form");
+        const todoInput=document.getElementById("todo-input");
+        const todoList=document.getElementById("todo-list");
+        
+        todoForm.addEventListener("submit",async(e)=>{
+            e.preventDefault();
+            const title=todoInput.value.trim();
+            if(title){
+                const todo={ title }
+                await createtodo(todo);
+                todoInput.value="";
+                loadtodos();
+            }
+        })
+        
+        async function createtodo(todo){
+            await fetch(apiurl,{
+                method:"POST",
+                body: JSON.stringify(todo),
+                headers:{"content-type" : "application/json"}
+            })
+        }
+        
+        async function loadtodos(){
+            const todos=await fetchtodos();
+            render(todos)
+        }
+        
+        async function fetchtodos(){
+            const response=await fetch(apiurl);
+            const todos=await response.json();
+            return todos;
+        }
+        
+        function render(todos){
+            todoList.innerHTML="";
+            todos.forEach((todo) => {
+                const todoelement=createtodoelement(todo);
+                todoList.appendChild(todoelement)
+            });
+        }
+        function createtodoelement(todo){
+            const div=document.createElement("div");
+            div.classList.add("todo");
+            div.innerHTML=`
+                <span class="${todo.completed?"completed":""}">${todo.title}</span>
+                <div>
+                    <button onclick="togglecompleted(${todo.id})">${todo.completed?"complete":"incomplete"}</button>
+                    <button onclick="deletetodo(${todo.id})">Delete</button>
+                </div>
+            `;
+            return div;
+        }
+        async function togglecompleted(id){
+            const todo=await gettodo(id);
+            const update={...todo,completed:!todo.completed}
+            await updatetodo(update);
+            loadtodos();
+        }
+        async function deletetodo(id) {
+            await fetch(`${apiurl}/${id}`, { method: "DELETE" });
+            loadtodos();
+        }
+        async function gettodo(id){
+            const response=await fetch(`${apiurl}/${id}`)
+            const todo=await response.json();
+            return todo;
+        }
+        async function updatetodo(todo){
+            await fetch(`${apiurl}/${todo.id}`,{
+                method:"PUT",
+                body:JSON.stringify(todo),
+                headers:{"content-type":"application/json"}
+            });
+        }
+
+    </script>
+</body>
+</html>
